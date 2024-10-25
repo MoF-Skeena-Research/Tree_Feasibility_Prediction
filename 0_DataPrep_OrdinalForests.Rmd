@@ -23,7 +23,6 @@ require(foreach)
 
 source("./_functions/AddVars.R")
 cloud_dir <- "D:/OneDrive - Government of BC/CCISSv12/latest_CCISS_tool_files/"
-
 ```
 
 Read in all data tables
