@@ -1,13 +1,48 @@
 ---
 title: "Ordinal Forest of Tree Feasibility"
 author: "William H MacKenzie"
-format: html
+date: "24/10/2024"
+format:
+  typst:
+    toc: true
+    toc-depth: 2
+    toc-title: Contents
+    section-numbering: 1.1.1
+    columns: 1
 editor: visual
+execute:
+  echo: false
+  error: false
+  warning: false
+  message: false
+  fig.width: 6
+  fig.height: 4
+  fig.align: 'left'
+  fig.cap: true
+  fig.pos: H
+  out.width: '100%'
+  dev: pdf
+  fig.ext: pdf
+  cache: true
+  fig.retina: 2
+  dpi: 600
+  fig.asp: 1.5
+  fig.path: "./figures/"
 ---
 
-# Build model for each species from existing ESuit values
+This script builds species specific ordinal forest models of feasibility rating for all site units in western North America. The sample set is comprised of 50 sites for each BGC randomly extracted from a 5km grid of locations and attributed with climate data from the climr package. Each training location is replicated for each site units in the BGC and these points are futher attributed with site series specific edaphic attributes including mean SNR (ordinal) and rSMR adjusted minimum and maximum climatic moisture deficit to represent aSMR of sites. For each species, the data set is divided into five equal sets with equal balance of expert feasibility ratings. Five ordinal forests models are built using the ordinalForest package each using 4 of the sets (80% of the sample se)t and used to predict the left-out test set (20%). The feasibility predictions are aligned with the original feasibility ratings and presented for review.
 
-Training set could be the ratings from the CCISS paper plus ratings of all site series from "boundary" BGCs Alpine/Subalpine, BG/Desert, Hypermaritime, Alberta Then predict the same data and flag the outliers
+Still to do:
+
+1.  In output, add-in CFRG suitability rating and mean cover from BEC plots.
+
+2.  Build adjustment for modified site conditions of specific site series defined by extra edatopic factors for use in normal attribution run.
+
+    -   Extra-edaphic factors may include topographic adjustments to climate variables (e.g. insolation or cold slopes affecting temperature and CMD adjustments), frost prone sites (affecting FFP, temperature), snow accumulation (PAS, DD5)
+
+    -   For some azonal site series there may be some typical slope position adjustments to be applied. e.g. site series of recieving areas are likely cooled by cold air flow, adjacency to water, higher liklihood of being shaded in mountainous terrain....
+
+3.  Apply rules of 1 to all site series to assist in building footnotes for the Reference Guide.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -17,39 +52,7 @@ require(ordinalForest)
 require(tidymodels)
 require(themis)
 require(tictoc)
-# require (RGtk2)
-# require(plyr)
-# require (rChoiceDialogs)
-# require(doBy)
-# require (utils)
-# require(labdsv)
-# require(tools )
-# require(svDialogs)
-# require(tcltk)
-# require(randomForest)
-# require(foreach)
-# require(dplyr)
-# require(reshape2)
-# require(reshape)
-# require(doParallel)
-# require(caret)
-# require(C50)
-# require (stringr)
-# require(UBL)
-# require(dostats)
-
-# require(tidyr)
-# require (rgdal)
-# require(mapview)
-# require(sf)
-# require(tmap)
-# require(tidyverse)
-# require(rmapshaper)
-# require(rgeos)
-# require(raster)
-# require(devtools)
-
-# require(themis)
+require(foreach)
 
 # install_github("eblondel/cleangeo")
 # require(cleangeo)
@@ -63,8 +66,12 @@ cloud_dir <- "D:/OneDrive - Government of BC/CCISSv12/latest_CCISS_tool_files/"
 feas.dat <- readRDS(paste0(cloud_dir,"OrdinalForest_data.rds"))
 ```
 
-```{r build ML for each species}
-X1.build <- feas.dat %>% distinct() %>% dplyr::filter(SpecialCode == "" |SpecialCode == "LOW") %>% dplyr::select(BGC,SS_NoSpace, SpecialCode, spp, newfeas, everything())
+#Build and predict with cross-validated models and export results to csv.
+
+```{r cross-validated models}
+X1.build <- feas.dat %>% distinct() %>% dplyr::filter(SpecialCode == "" |SpecialCode == "LOW") %>% 
+  dplyr::select(BGC,SS_NoSpace, SpecialCode, spp, newfeas, everything()) %>% 
+  dplyr::select(-ESuit, -fid, -xcoord, -ycoord, -zone, -PERIOD, -WNA_DEM_4326_clipped, -Special) %>% drop_na()
 X1.build <- as.data.frame(X1.build)
 ##---To limit the site series 
 #SS_Use <- read.csv("./inputs/SiteSeries_Use_CCISSpaper_24Mar2020.csv")
@@ -74,44 +81,37 @@ Spp.list <- unique(X1.build$spp)
 Spp.list <- c("Ba", "Bl","Bg","Cw","Fd", "Hm", "Hw","Lw",
                "Pw","Py", "Pl", "Sb","Sx","Ss", "Yc",
                "Qg", "Mb", "Ra", "Ac","At","Dr","Ep")
-#Spp.list = c("Py", "Pl")
-## new to extend function to assign to split data set into to one of 4 groups to then allow repeated training and testing
-
-#spp = "Py"
+#Spp.list = c("Pl")
+#spp = "Pl"
+#fold = 1
+##---Start of Foreach loops_________
 set.seed(12345)
 SuitPred <- foreach(spp = Spp.list, .combine = rbind) %do% {
   trainSub <- X1.build[X1.build$spp == spp,] %>% distinct() %>% drop_na()###subset training points 
-  feas_split <- initial_split(trainSub, prop = .7, strata = newfeas)
-train_data <- training(feas_split)
-test_data <- testing(feas_split)
-  #testdata = trainSub  %>% dplyr::select(-BGC, -SS_NoSpace, -spp, -newfeas, -SpecialCode)
-  Count <- trainSub %>% count(newfeas)
-  ### may need to have two different recipes
-    #if(Count >= 2){ ###somtimes there aren't any subzones skip to else
-     train_data $newfeas<- as.factor(train_data $newfeas)
-    train_data $newfeas <- droplevels(train_data $newfeas)
+  nsplit = 5
+  folds <- vfold_cv(trainSub, v = nsplit, strata = newfeas)
+  #   feas_split <- initial_split(trainSub, prop = 3/4, strata = newfeas)
+  foreach(fold = 1:nsplit) %do%{
+  train_data <- as.data.frame(folds$splits[[fold]], data = "analysis")
+  test_data <- as.data.frame(folds$splits[[fold]], data = "assessment")
 
-    Spp_recipe <-  recipe(newfeas ~ ., data =  train_data) %>%
+  train_data$newfeas<- as.factor(train_data $newfeas)
+  train_data$newfeas <- droplevels(train_data $newfeas)
+
+  Spp_recipe <-  recipe(newfeas ~ ., data =  train_data) %>%
     update_role(BGC, SS_NoSpace, spp, SpecialCode, new_role = "id variable") %>%
-      step_downsample(newfeas, under_ratio = 4) %>%
+    themis::step_downsample(newfeas, under_ratio = 4) %>%
        #step_dummy(SpecialCode, one_hot = TRUE) %>%
-    #themis::step_downsample(newfeas, under_ratio = 4) %>%
-   # step_smote(BGC, over_ratio = .1, neighbors = 5) %>%
     prep()
 trainSub2 <- Spp_recipe  %>% juice()
 trainSub2 <- as.data.frame(trainSub2)
 Count <- trainSub2 %>% count(newfeas)
     
-           #  trainSub <- removeOutlier(trainSub, alpha = 0.001)
-###build model for each subzone individually
-#      Suitmodel <- randomForest(newfeas ~ ., data=trainSub [-c(1:3)], nodesize = 5, do.trace = 10,
- #                           ntree=101, na.action=na.fail, importance=TRUE, proximity=FALSE)
-
 #-----Build Model for Each Species
 tic()
     SuitOrd <- ordfor(depvar = "newfeas", data = trainSub2 [,-c(1:4)], nsets=1000, nbest=10, ntreeperdiv=100, ntreefinal=101)#, perffunction = "probability" )
-    spp.ordmodel <- paste0("./sppModels/",spp, "_ordinalmodel.Rdata")
-    save(SuitOrd, file = spp.ordmodel)
+    spp.ordmodel <- paste0("./sppModels/",spp, "_ordinalmodel", fold,".rds")
+    saveRDS(SuitOrd, file = spp.ordmodel)
 toc()
 #-----------
 ESuit_ord.pred <- predict(SuitOrd, test_data )
@@ -125,160 +125,199 @@ test_data$ESuit_ord <- as.character(ESuit_ord.pred$ypred)
     test_data <-  test_data %>% dplyr::mutate(feas.orig = as.numeric(newfeas), pred.feas = as.numeric(ESuit_ord)) %>% mutate(feas.diff = pred.feas - feas.orig)
     test_data <-  test_data %>% dplyr::select(BGC, SS_NoSpace, spp, newfeas,  ESuit_ord,  ESuit_orddiff, everything())
     test_data
-
-}
+  }
+  }
+##----end of foreach loops
 #summarize ratio of True and False by spp
+predicted_feas <- do.call(rbind.data.frame, SuitPred)
 
-correct.calls <- SuitPred %>% dplyr::select(spp, feas.diff) %>% group_by(spp) %>% count(feas.diff)
-xx <- SuitPred %>% filter(spp == "Lw")
-yy <- SuitPred %>% filter(BGC == "SBSdk")
+fwrite(predicted_feas, "./outputs/predicted_feasibility.csv")
+sum.deviations <- predicted_feas %>% dplyr::select(spp, feas.diff) %>% group_by(spp) %>% count(feas.diff)
+species.sum <- predicted_feas %>% filter(spp == "Lw")
+bgc.sum <- predicted_feas %>% filter(BGC == "ICHmc2")
+model <- readRDS("./sppModels/Lw_ordinalmodel5.rds")
+model$forestfinal$prediction.error
+varimp <- model$varimp %>% data.frame()
+
+```
+
+To do: build a final model for prediction of any new site series. If these new site series fall outside the dimensions of the current training set, caution should be used in interpreting the results.\\
+
+##Decision Trees to examine limiting conditions for species
+
+```{r C50 decision trees}
+require(C50)
+require(ggparty)
+  trainSub <-  X1.build %>% 
+    select(-BGC, -SS_NoSpace, -SpecialCode,  -zone, -PERIOD, -WNA_DEM_4326_clipped, -Special) 
+  #   distinct() %>% drop_na()
+  trainSub <- trainSub[trainSub$spp == "Lw",] %>% 
+    select(newfeas, everything()) %>% select(-spp) %>% 
+    distinct() %>% drop_na()
+   trainSub$newfeas <- recode(trainSub$newfeas, "1" = "1", "2" = "1", "3" = "1", "4" = "4", "4" = "5")
+
+  model <- C5.0(x = trainSub[,-c(1)], y = trainSub$newfeas, rules = FALSE,
+                control = C5.0Control(minCases = 20, winnow = TRUE, CF = 0.25, noGlobalPruning = TRUE))
+plot(model)
+# party.model <- C50::as.party.C5.0(model)
+# ggparty(party.model) +
+#   geom_edge() +
+#   geom_edge_label() +
+#   geom_node_label(aes(label = splitvar), ids = "inner") +
+#   # identical to  geom_node_splitvar() +
+#   geom_node_label(aes(label = info), ids = "terminal")
+# require(rpartScore)
+# 
+#   trainSub <- X1.build[X1.build$spp == "Lw",] %>% distinct() %>% drop_na()
+
+
 ```
 
 ```{r predict new site series}
-
-spp = "Fdi"
-
-#ESuit.new2 <- left_join(ESuit.new, env.pts, by = "SS_NoSpace")
-### load new data
-
-#env.pts <- X1.sub %>% drop_na()
-#env.pts$newfeas <- as.character(env.pts$newfeas)
-env.pts <- SS_test %>% distinct()  %>% 
-  dplyr::select(BGC,SS_NoSpace, SpecialCode, spp, newfeas, everything())  %>% drop_na(where(is.numeric))
-  #%>% dplyr::filter(BGC == "SBSmc2")
-
-Spp.list <- unique (Trees$spp)
-nomodel = c("Kc","Gp", "Jc", "X", "Ob")
-Spp.list <- Spp.list[!Spp.list %in% nomodel]
-#env.pts <- env.pts %>% dplyr::select(-spp) %>% distinct()
-###all data
-#env.pts <- SS_new_env %>% drop_na() ###only BECv12
-fwrite(env.pts, "./outputs/temptest.csv")
-env.pts <- fread("./outputs/temptest.csv")
-#X1.sub <- as.data.frame(X1.sub)
-
-# # %>% drop_na()
-# Spp.list <- c("Fd","Qg")
-# #Spp.list <- unique(X1.sub$Spp)
-#  Spp.list <- c("Ba", "Bl","Bg","Cw","Fdi", "Hm", "Hw","Lw",
-#                "Pw","Pyi", "Pa", "Pli", "Sb","Sx","Ss", "Yc",
-#                "Qg", "Mb", "Ra", "Act","At","Dr","Ep",
-#                "Bp")
+# spp = "Fdi"
 # 
-spp = "Bl"
- SuitPred <- foreach(spp = Spp.list, .combine = rbind) %do% {
-  #spp.newfeas.info <- env.pts %>% dplyr::select(BGC, SS_NoSpace,spp, newfeas) %>% filter(spp == spp)#[X1.sub$Spp == spp,] %>% distinct() %>% drop_na()###subset training points to only include selected zone
-   spp.newfeas.info <- env.pts %>% dplyr::select(BGC, SS_NoSpace)
-  testdata = env.pts  %>% dplyr::select(-BGC,  -Special, -SpecialCode)#-Retire,-Source,
-  #testdata = env.pts  #, )
-testdata <- as.data.frame(testdata)
-spp.ordmodel <- paste0("./sppModels/",spp, "_ordinalmodel.Rdata")
-load(file = spp.ordmodel)
-ESuit_ord.pred <- predict(SuitOrd, testdata)    
-
-spp.newfeas.info$ESuit_ord <- as.character(ESuit_ord.pred$ypred)
-
-#test.pred <- as.data.frame(testdata$ESuit_ord) %>% dplyr::rename("ESuit_ord" = 1)
-#test.out <- cbind(spp.newfeas.info, testdata)
-#table(data.frame(true_values=trainSub$newfeas, predictions=ESuit_ord.pred$ypred))#
-   
-    #test.out2 <-  test.out %>% dplyr::select(BGC, SS_NoSpace, spp, newfeas,  ESuit_ord,  ESuit_orddiff)
-    
- #   spp.newfeas.info$newfeas <- as.numeric(spp.newfeas.info$newfeas)
-    spp.newfeas.info$ESuit_ord <- as.numeric(spp.newfeas.info$ESuit_ord)
-    setDT(spp.newfeas.info)
-cols = sapply(spp.newfeas.info, is.numeric)
-cols = names(cols)[cols]
-newfeas.mean <- spp.newfeas.info[, lapply(.SD, mean), .SDcols = cols, by = SS_NoSpace] %>% rename_with( ~ paste(.x, "mean",  sep = "_")) %>% dplyr::rename( SS_NoSpace = 1)
-newfeas.mean$spp = spp
-
-newfeas.mean    
-
-}
-
-SuitPred$ESuitRnd <- SuitPred$ESuit_ord_mean %>% round(0)
-
- same = ""
- same$newfeas_mean = 4; same$ESuitRnd = 4
- same <- as.data.frame(same) %>% dplyr::select(newfeas_mean, ESuitRnd)
- #SuitPred2 <- anti_join(SuitPred, same) %>% distinct() %>% dplyr::rename(newfeas = newfeas_mean)
-  #   SuitPred2$ESuit_orddiff <- ifelse(SuitPred2$ESuitRnd == SuitPred2$newfeas, "True", "False") 
-## Add in no species 'X' for site series with no suitable species
-withspp <- SuitPred %>% filter(!ESuitRnd == 4) %>% dplyr::select(SS_NoSpace) %>% distinct()
-allss <- as.data.frame(SuitPred$SS_NoSpace) %>% distinct() %>% dplyr::rename(SS_NoSpace = 1)
-withnospp <- anti_join(allss, withspp,  by = "SS_NoSpace")
-withnospp <- left_join(withnospp, SuitPred) %>% mutate(ESuit_ord_mean = 1, spp = "X", ESuitRnd = 1) %>% distinct()
-SuitPred <- rbind(SuitPred, withnospp)
-SuitPred$ESuitRnd <- SuitPred$ESuit_ord_mean %>% round(0)
-
-###
-ESuit.orig <- fread(paste0(cloud_dir,"Feasibility_v12_10.csv"), data.table=FALSE) %>% distinct()# %>% filter(BGC == "CWHmm1")
-SuitPred2 <- SuitPred %>% filter(!ESuitRnd == 4) %>% left_join(WNA_SS, by = "SS_NoSpace")%>% left_join(ESuit.orig) %>% 
-  mutate(Same = ifelse(ESuitRnd == newfeas, "Same", "Diff"))
-Suitrev <- SuitPred2 %>% filter(BGC == "SBSdk")
-fwrite(SuitPred2,paste0(cloud_dir,"NewBGC_Feasibility_predicted_v12_10.csv"))
+# #ESuit.new2 <- left_join(ESuit.new, env.pts, by = "SS_NoSpace")
+# ### load new data
+# 
+# #env.pts <- X1.sub %>% drop_na()
+# #env.pts$newfeas <- as.character(env.pts$newfeas)
+# env.pts <- SS_test %>% distinct()  %>% 
+#   dplyr::select(BGC,SS_NoSpace, SpecialCode, spp, newfeas, everything())  %>% drop_na(where(is.numeric))
+#   #%>% dplyr::filter(BGC == "SBSmc2")
+# 
+# Spp.list <- unique (Trees$spp)
+# nomodel = c("Kc","Gp", "Jc", "X", "Ob")
+# Spp.list <- Spp.list[!Spp.list %in% nomodel]
+# #env.pts <- env.pts %>% dplyr::select(-spp) %>% distinct()
+# ###all data
+# #env.pts <- SS_new_env %>% drop_na() ###only BECv12
+# fwrite(env.pts, "./outputs/temptest.csv")
+# env.pts <- fread("./outputs/temptest.csv")
+# #X1.sub <- as.data.frame(X1.sub)
+# 
+# # # %>% drop_na()
+# # Spp.list <- c("Fd","Qg")
+# # #Spp.list <- unique(X1.sub$Spp)
+# #  Spp.list <- c("Ba", "Bl","Bg","Cw","Fdi", "Hm", "Hw","Lw",
+# #                "Pw","Pyi", "Pa", "Pli", "Sb","Sx","Ss", "Yc",
+# #                "Qg", "Mb", "Ra", "Act","At","Dr","Ep",
+# #                "Bp")
+# # 
+# spp = "Bl"
+#  SuitPred <- foreach(spp = Spp.list, .combine = rbind) %do% {
+#   #spp.newfeas.info <- env.pts %>% dplyr::select(BGC, SS_NoSpace,spp, newfeas) %>% filter(spp == spp)#[X1.sub$Spp == spp,] %>% distinct() %>% drop_na()###subset training points to only include selected zone
+#    spp.newfeas.info <- env.pts %>% dplyr::select(BGC, SS_NoSpace)
+#   testdata = env.pts  %>% dplyr::select(-BGC,  -Special, -SpecialCode)#-Retire,-Source,
+#   #testdata = env.pts  #, )
+# testdata <- as.data.frame(testdata)
+# spp.ordmodel <- paste0("./sppModels/",spp, "_ordinalmodel.Rdata")
+# load(file = spp.ordmodel)
+# ESuit_ord.pred <- predict(SuitOrd, testdata)    
+# 
+# spp.newfeas.info$ESuit_ord <- as.character(ESuit_ord.pred$ypred)
+# 
+# #test.pred <- as.data.frame(testdata$ESuit_ord) %>% dplyr::rename("ESuit_ord" = 1)
+# #test.out <- cbind(spp.newfeas.info, testdata)
+# #table(data.frame(true_values=trainSub$newfeas, predictions=ESuit_ord.pred$ypred))#
+#    
+#     #test.out2 <-  test.out %>% dplyr::select(BGC, SS_NoSpace, spp, newfeas,  ESuit_ord,  ESuit_orddiff)
+#     
+#  #   spp.newfeas.info$newfeas <- as.numeric(spp.newfeas.info$newfeas)
+#     spp.newfeas.info$ESuit_ord <- as.numeric(spp.newfeas.info$ESuit_ord)
+#     setDT(spp.newfeas.info)
+# cols = sapply(spp.newfeas.info, is.numeric)
+# cols = names(cols)[cols]
+# newfeas.mean <- spp.newfeas.info[, lapply(.SD, mean), .SDcols = cols, by = SS_NoSpace] %>% rename_with( ~ paste(.x, "mean",  sep = "_")) %>% dplyr::rename( SS_NoSpace = 1)
+# newfeas.mean$spp = spp
+# 
+# newfeas.mean    
+# 
+# }
+# 
+# SuitPred$ESuitRnd <- SuitPred$ESuit_ord_mean %>% round(0)
+# 
+#  same = ""
+#  same$newfeas_mean = 4; same$ESuitRnd = 4
+#  same <- as.data.frame(same) %>% dplyr::select(newfeas_mean, ESuitRnd)
+#  #SuitPred2 <- anti_join(SuitPred, same) %>% distinct() %>% dplyr::rename(newfeas = newfeas_mean)
+#   #   SuitPred2$ESuit_orddiff <- ifelse(SuitPred2$ESuitRnd == SuitPred2$newfeas, "True", "False") 
+# ## Add in no species 'X' for site series with no suitable species
+# withspp <- SuitPred %>% filter(!ESuitRnd == 4) %>% dplyr::select(SS_NoSpace) %>% distinct()
+# allss <- as.data.frame(SuitPred$SS_NoSpace) %>% distinct() %>% dplyr::rename(SS_NoSpace = 1)
+# withnospp <- anti_join(allss, withspp,  by = "SS_NoSpace")
+# withnospp <- left_join(withnospp, SuitPred) %>% mutate(ESuit_ord_mean = 1, spp = "X", ESuitRnd = 1) %>% distinct()
+# SuitPred <- rbind(SuitPred, withnospp)
+# SuitPred$ESuitRnd <- SuitPred$ESuit_ord_mean %>% round(0)
+# 
+# ###
+# ESuit.orig <- fread(paste0(cloud_dir,"Feasibility_v12_10.csv"), data.table=FALSE) %>% distinct()# %>% filter(BGC == "CWHmm1")
+# SuitPred2 <- SuitPred %>% filter(!ESuitRnd == 4) %>% left_join(WNA_SS, by = "SS_NoSpace")%>% left_join(ESuit.orig) %>% 
+#   mutate(Same = ifelse(ESuitRnd == newfeas, "Same", "Diff"))
+# Suitrev <- SuitPred2 %>% filter(BGC == "SBSdk")
+# fwrite(SuitPred2,paste0(cloud_dir,"NewBGC_Feasibility_predicted_v12_10.csv"))
 
 ```
 
-# Test against reviewed grids and footnotes
+Graphical summaries comparing predicted and actual feasibility ratings for each species.
 
 ```{r graphical exploration}
+predicted_feas <- fread( "./outputs/predicted_feasibility.csv")
 #Explore species suitability by variable
 #SS_Use <- read.csv("D:/CommonTables/BECdb/SiteSeries_Use_CCISSpaper.csv")
-SS_C4 <- X1.build [X1.build $Use == "C4",]
-C4_Compare <- SuitPred [SuitPred$SS_NoSpace %in% SS_C4$SS_NoSpace,]
-#Sp1 = "Sx"
-#C4_Comparewith <- C4_Compare [C4_Compare$Spp %in% Sp1, ]
-
-#SS_test2 <- BGCwith #skip next lines if no unsuitables are desired
-  ######Includes non-suitable conditions
-#   C4_Comparenot <- C4_Compare[(!C4_Compare$Unit %in% C4_Comparewith$Unit),]
-#   C4_Comparenot$Spp <- Sp1
-#   C4_Comparenot$ESuit <- "E5"
-#   C4_Comparenot <- C4_Comparenot %>% distinct() 
-# #BGCnot$ESuit <- as.factor (BGCnot$ESuit)
-  # C4_Compare2 <- rbind(C4_Comparewith, C4_Comparenot)
-    ############Plot species suit by variable
-    p <- ggplot(C4_Compare, aes(ESuit, CMD.total))+
-      geom_boxplot(stat = "boxplot",  varwidth=TRUE) +
-      geom_point(shape = 21, fill = "red", size = 1)+
-      facet_grid(~Spp)+
-  #geom_jitter(width = 0) +
-      xlab ("ESuit")+
-      ylab ("CMD.total")+
-      geom_text (aes(label= BGC), size = 2, hjust = -1, position = position_dodge(width=1) )
-plot(p)
-
-#######Bring in Reference Guide info
-RefGuide <- read.csv("D:/CommonTables/ReferenceGuide/ReferenceGuide2019Complete.csv")
-##---Create comparison of reference guide to predicted suitability tables
-
-RefGuide2 <-RefGuide %>% filter (Region == "Vancouver" | Region == "Haida Gwaii2014") %>% 
-  select(Region, SS_NoSpace, Species, Suitability, FN1, FN2, FN3, FN4, FN5) %>% 
-  dplyr::rename(Spp = Species) #(Region == "Nelson" | Region == "LMH702016" | Region ==  "LMH71_Nelson")
-                             
-Suitability <- left_join(RefGuide2,SuitPred,  by = c("SS_NoSpace" = "SS_NoSpace", "Spp" = "Spp"))
-write.csv(Suitability, "./outputs/Vancouver_Tree_Suitability_2020.csv", row.names = FALSE)
-##---------------------------------
-RefGuide <- RefGuide[,c(2:4,9:14)]
-RefCombine <- RefGuide[,c(1:3)]
-FullSuitCompare <- merge(SS_test, RefGuide, by.x= c("SS_NoSpace", "Spp"), by.y = c("SS_NoSpace", "Species"))
-FullSuitCompare <-  FullSuitCompare  %>% distinct() 
+# SS_C4 <- X1.build [X1.build $Use == "C4",]
+# C4_Compare <- SuitPred [SuitPred$SS_NoSpace %in% SS_C4$SS_NoSpace,]
+# #Sp1 = "Sx"
+# #C4_Comparewith <- C4_Compare [C4_Compare$Spp %in% Sp1, ]
+# 
+# #SS_test2 <- BGCwith #skip next lines if no unsuitables are desired
+#   ######Includes non-suitable conditions
+# #   C4_Comparenot <- C4_Compare[(!C4_Compare$Unit %in% C4_Comparewith$Unit),]
+# #   C4_Comparenot$Spp <- Sp1
+# #   C4_Comparenot$ESuit <- "E5"
+# #   C4_Comparenot <- C4_Comparenot %>% distinct() 
+# # #BGCnot$ESuit <- as.factor (BGCnot$ESuit)
+#   # C4_Compare2 <- rbind(C4_Comparewith, C4_Comparenot)
+#     ############Plot species suit by variable
+#     p <- ggplot(C4_Compare, aes(ESuit, CMD.total))+
+#       geom_boxplot(stat = "boxplot",  varwidth=TRUE) +
+#       geom_point(shape = 21, fill = "red", size = 1)+
+#       facet_grid(~Spp)+
+#   #geom_jitter(width = 0) +
+#       xlab ("ESuit")+
+#       ylab ("CMD.total")+
+#       geom_text (aes(label= BGC), size = 2, hjust = -1, position = position_dodge(width=1) )
+# plot(p)
+# 
+# #######Bring in Reference Guide info
+# RefGuide <- read.csv("D:/CommonTables/ReferenceGuide/ReferenceGuide2019Complete.csv")
+# ##---Create comparison of reference guide to predicted suitability tables
+# 
+# RefGuide2 <-RefGuide %>% filter (Region == "Vancouver" | Region == "Haida Gwaii2014") %>% 
+#   select(Region, SS_NoSpace, Species, Suitability, FN1, FN2, FN3, FN4, FN5) %>% 
+#   dplyr::rename(Spp = Species) #(Region == "Nelson" | Region == "LMH702016" | Region ==  "LMH71_Nelson")
+#                              
+# Suitability <- left_join(RefGuide2,SuitPred,  by = c("SS_NoSpace" = "SS_NoSpace", "Spp" = "Spp"))
+# write.csv(Suitability, "./outputs/Vancouver_Tree_Suitability_2020.csv", row.names = FALSE)
+# ##---------------------------------
+# RefGuide <- RefGuide[,c(2:4,9:14)]
+# RefCombine <- RefGuide[,c(1:3)]
+# FullSuitCompare <- merge(SS_test, RefGuide, by.x= c("SS_NoSpace", "Spp"), by.y = c("SS_NoSpace", "Species"))
+# FullSuitCompare <-  FullSuitCompare  %>% distinct() 
 ```
 
-#Feasibility by Site Series matrix for Use in QGIS
+Mapped distribution of species range colour-themed by highest rating in BGC
 
 ```{r feasibility matrix}
-newfeas <- SuitPred %>% select(BGC, SS_NoSpace, Spp, ESuit_ord)
-newfeas$ESuit_ord <- str_remove_all(newfeas$ESuit_ord, "[E]") ## remove E in suitability rating
-newfeas$ESuit_ord <- as.integer(newfeas$ESuit_ord)
-newfeas_CCISS_Narrow <- left_join(SS_Use2, newfeas, by = c("SS_NoSpace" = "SS_NoSpace"))
-newfeas_CCISS_Narrow <- newfeas_CCISS_Narrow %>% drop_na()%>% select(-MergedBGC)
-write.csv(newfeas_CCISS_Narrow, "./CCISS_Feasibility.csv", row.names = F)
-
-newfeas_wide <- newfeas %>% distinct () %>% pivot_wider(names_from = Spp, values_from = ESuit_ord)
-SS_Use2 <- SS_Use %>% select(MergedBGC, SS_NoSpace, Use)
-newfeas_CCISS <- left_join(SS_Use2,newfeas_wide,  by = c("SS_NoSpace" = "SS_NoSpace")) %>% select(-MergedBGC)
-
-write.csv(newfeas_CCISS, "./CCISS_Feasibility_Matrix.csv", row.names = F)
+# newfeas <- SuitPred %>% select(BGC, SS_NoSpace, Spp, ESuit_ord)
+# newfeas$ESuit_ord <- str_remove_all(newfeas$ESuit_ord, "[E]") ## remove E in suitability rating
+# newfeas$ESuit_ord <- as.integer(newfeas$ESuit_ord)
+# newfeas_CCISS_Narrow <- left_join(SS_Use2, newfeas, by = c("SS_NoSpace" = "SS_NoSpace"))
+# newfeas_CCISS_Narrow <- newfeas_CCISS_Narrow %>% drop_na()%>% select(-MergedBGC)
+# write.csv(newfeas_CCISS_Narrow, "./CCISS_Feasibility.csv", row.names = F)
+# 
+# newfeas_wide <- newfeas %>% distinct () %>% pivot_wider(names_from = Spp, values_from = ESuit_ord)
+# SS_Use2 <- SS_Use %>% select(MergedBGC, SS_NoSpace, Use)
+# newfeas_CCISS <- left_join(SS_Use2,newfeas_wide,  by = c("SS_NoSpace" = "SS_NoSpace")) %>% select(-MergedBGC)
+# 
+# write.csv(newfeas_CCISS, "./CCISS_Feasibility_Matrix.csv", row.names = F)
 ```
