@@ -249,4 +249,18 @@ fwrite(X1.sub, paste0(cloud_dir,"OrdinalForest_data.csv"))
 saveRDS(X1.sub, paste0(cloud_dir,"OrdinalForest_data.rds"))
 ```
 
+## Create additional data sets for modified climate sets to predict when sites are:
+- Cold Air receiving (DD5, CMD, PAS, AHM, MCMT, bFFP, Tmin_sm, Eref)
+- Cold Aspect (CMD, PAS, MWMT, Tmax_sm, Eref)
+- Insolation slopes ()
+- Snow accumulation ()
+- Slope position (windy crest/upper)
+- Slope position (protected receiving sites)
+- High or Low elevation sites (top 25% or bottom 25%)
+- Require cover?
+This can guide footnote development
+
+```{r}
+
+```
 
