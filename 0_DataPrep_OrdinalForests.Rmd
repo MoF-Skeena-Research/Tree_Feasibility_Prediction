@@ -22,45 +22,59 @@ require(data.table)
 require(foreach)
 
 source("./_functions/AddVars.R")
-cloud_dir <- "D:/OneDrive - Government of BC/CCISSv12/latest_CCISS_tool_files/"
+cloud_dir <- "D:/OneDrive - Government of BC/WNA_BGC - Future Forest Ecosystems Centre/"
 ```
 
 Read in all data tables
 ```{r read in data}
-Trees <- fread(paste0(cloud_dir,"TreeSpeciestoModel2.csv"), data.table=FALSE) %>% filter(Include == "y") %>% dplyr::select(TreeCode) %>% dplyr::rename(spp = TreeCode)# %>% add_row(spp = "")
+# load(paste0(cloud_dir,"/Trained_Models/BGC_RFresp.Rdata"))
+# xx <- BGC_RFresp$varImp
 
-BGCZone <-fread(paste0(cloud_dir,"WNA_BGCs_Info_v12_15_DVM.csv"), data.table=FALSE) %>% dplyr::select(Zone, BGC)
 
-ESuit <- fread(paste0(cloud_dir,"Feasibility_v12_15_DVM.csv"), data.table=FALSE) %>%
+
+Trees <- fread(paste0(cloud_dir,"ccissv13_files/TreeSpeciestoModel2.csv"), data.table=FALSE) %>% filter(Include == "y") %>% dplyr::select(TreeCode) %>% dplyr::rename(spp = TreeCode)# %>% add_row(spp = "")
+
+BGCZone <-fread(paste0(cloud_dir,"ccissv13_files/WNA_BGCs_Info_v13_1.csv"), data.table=FALSE) #%>% dplyr::select(Zone, BGC)
+
+ESuit <- fread(paste0(cloud_dir,"ccissv13_files/Feasibility_v13_1.csv"), data.table=FALSE) %>% dplyr::filter(!outrange == TRUE) %>% 
   distinct() %>%
   dplyr::rename("SS_NoSpace"= ss_nospace, "BGC" = bgc)
 
-climdat <- fread("D:/GitHub/BEC_Classification_Analysis/clean_data/climr_WNAv12_5kmgrid.csv", stringsAsFactors = FALSE, data.table = FALSE)
+WNA_SS <- ESuit %>% dplyr::select(SS_NoSpace, BGC) %>% distinct()
+
+climdat <- fread("D:/GitHub/BEC_Classification_Analysis/clean_data/climr_WNAv13_5kmgrid.csv", stringsAsFactors = FALSE, data.table = FALSE)
+
+xx <- climdat %>% filter(BGC == "CWHvm3")
 #take sample from grid for model build
 sample.n = 50
 
 climdat.sample <- climdat %>% group_by(BGC) %>% slice(sample(n(),min(sample.n, n()))) %>% ungroup() %>% filter(!BGC == "(None)")
 climdat.sample <- addVars(climdat.sample)
 
-E1 <-fread(paste0(cloud_dir,"Edatopic_v12_15_DVM.csv"),  na.strings= c("", "NA")) %>% distinct()
+E1 <-fread(paste0(cloud_dir,"ccissv13_files/Edatopic_v13_1.csv"),  na.strings= c("", "NA")) %>% distinct()
 
-S1 <- fread(paste0(cloud_dir,"SpecialAdjustments_v2.csv"),  na.strings= c("", "NA")) %>% distinct()
+S1 <- fread(paste0(cloud_dir,"ccissv13_files/SpecialAdjustments_v2.csv"),  na.strings= c("", "NA")) %>% distinct()
 
-aSMRrSMR="modelled_rSMR_aSMR_grid_HalfStep_WNAv12.csv"
-aSMR <-fread(paste0(cloud_dir,aSMRrSMR, na.strings=".")) %>% filter(!BGC == "")
+#aSMRrSMR="WNAv13_rSMR_aSMR_ModelGrid.csv"
+aSMR <-fread("./inputs/WNAv13_rSMR_aSMR_ModelGrid.csv") %>% filter(!BGC == "")
 
-WNA_SS <- fread(paste0(cloud_dir,"WNA_SSeries_v12_11.csv", na.strings="."))
+#WNA_SS <- fread(paste0(cloud_dir,"ccissv13_files/WNA_SSeries_v12_11.csv", na.strings="."))
 
-SS_special <- WNA_SS %>% dplyr::filter(!SpecialCode == "") %>% dplyr::select(SS_NoSpace, SpecialCode)
+
+#SS_special <- WNA_SS %>% dplyr::filter(!SpecialCode == "") %>% dplyr::select(SS_NoSpace, SpecialCode)
+
+ESuit <- ESuit %>% group_by(spp) %>% mutate(n = n()) %>% filter(n > 25) %>% dplyr::select(-n) %>% distinct() %>% ungroup
+
+xx <- ESuit %>% filter(BGC == "CWHvm3")
 ```
 
 Prepare feasibility data for model build
 ```{r prep feasibility data}
 
-ESuit.confirmed <- ESuit  %>% dplyr::select(SS_NoSpace, spp)#%>% dplyr::filter(!Confirmed == "")
+ESuit.confirmed <- ESuit  %>% dplyr::select(SS_NoSpace, spp) %>% distinct()
 
-ESuit <- ESuit %>% dplyr::select(BGC, SS_NoSpace, spp,newfeas)%>% distinct()
-ESuit <- full_join(Trees, ESuit)
+ESuit <- ESuit %>% dplyr::select(BGC, SS_NoSpace, spp,newfeas)%>% distinct(BGC, SS_NoSpace, spp, .keep_all = TRUE)
+#ESuit <- full_join(Trees, ESuit)
 ESuit$spp <-  ifelse(ESuit$spp == "", "X", ESuit$spp)
 ESuit.count <- ESuit %>% count(spp) %>%  filter(n > 1)
 ESuit.notree <- ESuit %>% filter(spp == "X")
@@ -75,6 +89,8 @@ ESuit.tree2 <- ESuit.tree %>% pivot_wider(id_cols = c(BGC, SS_NoSpace), names_fr
   as.data.frame() %>% replace(.=="NULL", 4) %>% replace(.== '5', 4) %>% mutate(across(where(is.numeric), ~ ifelse(is.na(.), 4, .)))# 
 ESuit.dat <- ESuit.tree2 %>% pivot_longer(!c(BGC,SS_NoSpace), names_to = "spp", values_to = "newfeas") %>% distinct()
 ESuit.dat <- as.data.frame(ESuit.dat)
+
+xx <- ESuit.dat  %>% count(spp)
 ```
 
 ## Add in data for running machine learning prediction
@@ -163,29 +179,32 @@ eda.stats <- E1.mean %>% inner_join(E1.min) %>% inner_join(E1.max)
 eda.stats <- eda.stats %>% dplyr::select(-rSMR_min, -rSMR_max) %>% mutate (rSMR_mean = ifelse(rSMR_mean >0.99, NA, rSMR_mean)) ### to be used to limit feasibility to max 3 due to thin soils
 
 ###This contains all valid site series with edatopic info  - use for new units to predict
-envdat <- climdat2 %>% left_join (WNA_SS, by = "BGC")  %>% left_join(eda.stats, by = "SS_NoSpace")  %>% filter(!DD5 == -9999) 
+envdat <- climdat2  %>% left_join (WNA_SS, by = "BGC") %>% left_join(eda.stats, by = "SS_NoSpace")  %>% 
+  filter(!DD5 == -9999) #
+ 
 ### add in Special code 'LOW' for rSMR >6 site series to account for low topographic position effects
-envdat3 <- envdat %>% mutate(SpecialCode = ifelse(is.na(SpecialCode) & rSMR_mean > 6, "LOW", SpecialCode))
+#envdat3 <- envdat %>% mutate(SpecialCode = ifelse(is.na(SpecialCode) & rSMR_mean > 6, "LOW", SpecialCode))
+envdat3 <- envdat
+
 #%>% dplyr::filter(BGC == "IDFdk2")
- S1 <- S1 %>% dplyr::select(-Special)
+ # S1 <- S1 %>% dplyr::select(-Special)
 # ##adjust environmental variables for special  site series
- envdat2 <- left_join(envdat3, S1)  %>% dplyr::filter(!is.na(SS_NoSpace)) %>% dplyr::select(-CMDadj, -Retire, -withsubtaxa,  -Source) %>% 
-replace(is.na(.), 1) %>%
-  mutate(DD5 = DD5 * DD5adj) %>%
-  mutate(PAS = PAS * PASadj) %>%
-  #mutate(TmaxJuly = TmaxJuly * TmaxJulyadj) %>%
-   mutate(Eref = Eref * Erefadj) %>%
-  mutate(AHM = AHM * AHMadj) %>%
-  #mutate(DD1040 = DD1040 * DD1040adj) %>%
-  mutate(bFFP = bFFP + bFFPadj -1) %>%
-  mutate(Tmin_sm = Tmin_sm + Tmin_smadj - 1) %>%
-  mutate(MCMT = MCMT + MCMTadj -1) %>%
- #   mutate(CMI =  CMI + CMIadj -1) %>%
-  dplyr::select(-contains("adj"))
+#  envdat2 <- envdat %>% dplyr::filter(!is.na(SS_NoSpace)) %>%# left_join(envdat3, S1) dplyr::select(-CMDadj, -Retire, -withsubtaxa,  -Source) %>% 
+# replace(is.na(.), 1) %>%
+#   mutate(DD5 = DD5 * DD5adj) %>%
+#   mutate(PAS = PAS * PASadj) %>%
+#   #mutate(TmaxJuly = TmaxJuly * TmaxJulyadj) %>%
+#    mutate(Eref = Eref * Erefadj) %>%
+#   mutate(AHM = AHM * AHMadj) %>%
+#   #mutate(DD1040 = DD1040 * DD1040adj) %>%
+#   mutate(bFFP = bFFP + bFFPadj -1) %>%
+#   mutate(Tmin_sm = Tmin_sm + Tmin_smadj - 1) %>%
+#   mutate(MCMT = MCMT + MCMTadj -1) %>%
+#  #   mutate(CMI =  CMI + CMIadj -1) %>%
+#   dplyr::select(-contains("adj"))
 
 
-envdat <- as.data.frame(envdat2) %>% distinct()
-
+#envdat <- as.data.frame(envdat2) %>% distinct()
 
 ##Identify set of new site series for prediction
 #SS_new_env <- envdat %>% filter(Source == "BECv12") %>% dplyr::select(-Retire, -Source)
@@ -233,7 +252,7 @@ SuitCompare$ESuit <- factor(SuitCompare$newfeas)
 VarList = c( "SNR_num_mean", "EdaCMD_max", "EdaCMD_min",
             "DD5", "CMD", "PAS", "AHM",  "MCMT",  "bFFP", "Tmin_sm", "AHM", "Eref")#"CMI",, "DD1040""TmaxJuly","PPT_MJ",
 
-List = c("BGC", "SS_NoSpace", "spp", "newfeas", "SpecialCode")
+List = c("BGC", "SS_NoSpace", "spp", "newfeas")#, "SpecialCode")
 X1.sub = SuitCompare  %>%  dplyr::select(c(List, everything()))
 X1.sub$newfeas <- as.factor(X1.sub$newfeas)
 X1_unsuit <- X1.sub %>% filter(newfeas == "4")
@@ -244,9 +263,9 @@ X1_unsuit <- X1_unsuit  %>%
   ungroup()
 ESuit.confirmed <- rbind(ESuit.confirmed, X1_unsuit$SS_NoSpace) ## adds a single site series instance of unsuitable to model build
 X1.sub <- rbind(X1_suit, X1_unsuit)
-
-fwrite(X1.sub, paste0(cloud_dir,"OrdinalForest_data.csv"))
-saveRDS(X1.sub, paste0(cloud_dir,"OrdinalForest_data.rds"))
+xx <- X1.sub %>% filter(BGC == "CWHvm3")
+#fwrite(X1.sub, paste0(cloud_dir,"OrdinalForest_data.csv"))
+saveRDS(X1.sub, "./inputs/OrdinalForest_data.rds")
 ```
 
 ## Create additional data sets for modified climate sets to predict when sites are:
