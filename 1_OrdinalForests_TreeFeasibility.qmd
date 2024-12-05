@@ -75,87 +75,87 @@ vars <- BGC_RFresp$variable.importance %>% data.frame() %>%
 #Build and predict with cross-validated models and export results to csv.
 
 ```{r cross-validated models}
-# X1.build <- feas.dat %>% distinct() %>% 
-#   dplyr::select(zone, BGC,SS_NoSpace, spp, newfeas, DD5.grow, SNR_num_mean, EdaCMD_max, EdaCMD_min, aSMR_max, vars)  %>% filter(!is.na(DD5.grow))
-# 
-# X1.build <- X1.build %>% 
-#   dplyr::select(-Tmin, -Tmax_sp, -Tmin_sm, -Tmin_at) #%>% 
-#   #dplyr::select(-WNA_DEM_4326_clipped, -xcoord, -ycoord, -PERIOD, -ESuit)
-# #dplyr::filter(SpecialCode == "" |SpecialCode == "LOW") %>% #  dplyr::select(-ESuit, -fid, -xcoord, -ycoord, -zone, -PERIOD, -WNA_DEM_4326_clipped, -Special) %>% 
-# xx <- X1.build %>% filter(BGC == "CWHvm3")
-# X1.build <- as.data.frame(X1.build)
-# sufficient <- X1.build %>% filter(!newfeas == 4) %>% group_by(spp) %>% count(spp) %>% filter(n > 50)
-# X1.build <- X1.build[X1.build$spp %in% sufficient$spp,] %>% arrange(BGC)
-# ##---To limit the site series 
-# #SS_Use <- read.csv("./inputs/SiteSeries_Use_CCISSpaper_24Mar2020.csv")
-# #X1.build <- X1.build[X1.build$SS_NoSpace %in% ESuit.confirmed$SS_NoSpace,]
-# xx <- X1.build %>% filter(spp == "Dr")
-# Spp.list <- unique(X1.build$spp)
-# #Spp.list <- c("Pw")
-# # Spp.list <- c("Ba", "Bl","Bg","Cw","Fd", "Hm", "Hw","Lw",
-# #                "Pl", "Pw","Py", "Sb","Sx","Ss", "Yc",
-# #               "Ac","At","Ep")
-# 
-# # Spp.list <- c("Bc" 
-# # "Bm"  "Bp"  "Jw"  "Oa"  "Ob"  "Oc"  "Pc"  "Pe"  "Pg" 
-# # "Pn"  "Ps"  "Pz"  "Sp"  "Yp"  "Aa"  "Adm" "Af"  "Mt" 
-# # "Og"  "Ot"  "Oy"  "Oz"  "Qc"  "X"   "Ju"  "Ac"  "Py" 
-# # "Fd"  "Om"  "Sx"  "Pl"  "Ol"  "Qb"  "Qd"  "Qx"  "Qz" 
-# # "On"  "Pk"  "Qk"  "Me"  "Ql"  "Kc"  "Up"  "Vb"  "Bla"
-# # "Qa"  "Op"  "Qm"  "Jo"  "Jc"  "Dw"  "Acb" "Fdc" "Fdi"
-# # "Plc" "Pli" "Pyc" "Pyi" "Se"  "Sw"  "Sxs" "Sxw")
-# 
-# # Spp.list = c("Dr")
-# # spp = "Pw"
-# fold = 5
-# ##---Start of Foreach loops_________
-# set.seed(12345)
-# SuitPred <- foreach(spp = Spp.list, .combine = rbind) %do% {
-#   trainSub <- X1.build[X1.build$spp == spp,] %>% drop_na() %>% distinct() ###subset training points 
-#   nsplit = 5
-#   folds <- vfold_cv(trainSub, v = nsplit, strata = newfeas)
-#   #   feas_split <- initial_split(trainSub, prop = 3/4, strata = newfeas)
-#   foreach(fold = 1:nsplit) %do%{
-#   train_data <- as.data.frame(folds$splits[[fold]], data = "analysis")
-#   test_data <- as.data.frame(folds$splits[[fold]], data = "assessment")
-# 
-#   train_data$newfeas<- as.factor(train_data $newfeas)
-#   train_data$newfeas <- droplevels(train_data $newfeas)
-# 
-#   Spp_recipe <-  recipe(newfeas ~ ., data =  train_data) %>%
-#     update_role(zone, BGC, SS_NoSpace,  spp,  new_role = "id variable") %>% #SpecialCode,
-#     #themis::step_downsample(newfeas, under_ratio = 4) %>%
-#        #step_dummy(SpecialCode, one_hot = TRUE) %>%
-#     prep()
-# trainSub2 <- Spp_recipe  %>% juice()
-# trainSub2 <- as.data.frame(trainSub2)# %>% droplevels()
-# Count <- trainSub2 %>% count(newfeas)
-#     
-# #-----Build Model for Each Species
-# tic()
-#     SuitOrd <- ordfor(depvar = "newfeas", data = trainSub2 [,-c(1:4)], nsets=1000, nbest=10, ntreeperdiv=100, ntreefinal=101)#, perffunction = "probability" )
-#     spp.ordmodel <- paste0("./sppModels/",spp, "_ordinalmodel", fold,".rds")
-#     saveRDS(SuitOrd, file = spp.ordmodel)
-# toc()
-# #-----------
-# ESuit_ord.pred <- predict(SuitOrd, test_data )
-# test_data$ESuit_ord <- as.character(ESuit_ord.pred$ypred)
-# 
-# # test.pred <- as.data.frame(test_data$ESuit_ord) %>% dplyr::rename("ESuit_ord" = 1)
-# # trainSub2 <- cbind(test_data, test.pred)
-# #table(data.frame(true_values=trainSub$newfeas, predictions=ESuit_ord.pred$ypred))#
-#     test_data$ESuit_orddiff <- ifelse(test_data$ESuit_ord == test_data$newfeas, "True", "False")
-#     test_data <- test_data %>% filter(!(newfeas == 4 & ESuit_ord ==4)) ## remove records where unsuitable in both predicted and actual
-#     test_data <-  test_data %>% dplyr::mutate(feas.orig = as.numeric(newfeas), pred.feas = as.numeric(ESuit_ord)) %>% mutate(feas.diff = pred.feas - feas.orig)
-#     test_data <-  test_data %>% dplyr::select(BGC, SS_NoSpace, spp, newfeas,  ESuit_ord,  ESuit_orddiff, everything())
-#     test_data
-#   }
-#   }
-# ##----end of foreach loops
-# #summarize ratio of True and False by spp
-# predicted_feas <- do.call(rbind.data.frame, SuitPred)
-# 
-# fwrite(predicted_feas, "./outputs/predicted_feasibility.csv")
+X1.build <- feas.dat %>% distinct() %>%
+  dplyr::select(zone, BGC,SS_NoSpace, SpecialCode, spp, newfeas, DD5.grow, SNR_num_mean, EdaCMD_max, EdaCMD_min, aSMR_max, vars)  %>% filter(!is.na(DD5.grow))
+
+X1.build <- X1.build %>%
+  dplyr::select(-Tmin, -Tmax_sp, -Tmin_sm, -Tmin_at) #%>%
+  #dplyr::select(-WNA_DEM_4326_clipped, -xcoord, -ycoord, -PERIOD, -ESuit)
+#dplyr::filter(SpecialCode == "" |SpecialCode == "LOW") %>% #  dplyr::select(-ESuit, -fid, -xcoord, -ycoord, -zone, -PERIOD, -WNA_DEM_4326_clipped, -Special) %>%
+xx <- X1.build %>% filter(BGC == "CWHvm3")
+X1.build <- as.data.frame(X1.build)
+sufficient <- X1.build %>% filter(!newfeas == 4) %>% group_by(spp) %>% count(spp) %>% filter(n > 50)
+X1.build <- X1.build[X1.build$spp %in% sufficient$spp,] %>% arrange(BGC)
+##---To limit the site series
+#SS_Use <- read.csv("./inputs/SiteSeries_Use_CCISSpaper_24Mar2020.csv")
+#X1.build <- X1.build[X1.build$SS_NoSpace %in% ESuit.confirmed$SS_NoSpace,]
+xx <- X1.build %>% filter(spp == "Dr")
+Spp.list <- unique(X1.build$spp)
+#Spp.list <- c("Pw")
+# Spp.list <- c("Ba", "Bl","Bg","Cw","Fd", "Hm", "Hw","Lw",
+#                "Pl", "Pw","Py", "Sb","Sx","Ss", "Yc",
+#               "Ac","At","Ep")
+
+# Spp.list <- c("Bc"
+# "Bm"  "Bp"  "Jw"  "Oa"  "Ob"  "Oc"  "Pc"  "Pe"  "Pg"
+# "Pn"  "Ps"  "Pz"  "Sp"  "Yp"  "Aa"  "Adm" "Af"  "Mt"
+# "Og"  "Ot"  "Oy"  "Oz"  "Qc"  "X"   "Ju"  "Ac"  "Py"
+# "Fd"  "Om"  "Sx"  "Pl"  "Ol"  "Qb"  "Qd"  "Qx"  "Qz"
+# "On"  "Pk"  "Qk"  "Me"  "Ql"  "Kc"  "Up"  "Vb"  "Bla"
+# "Qa"  "Op"  "Qm"  "Jo"  "Jc"  "Dw"  "Acb" "Fdc" "Fdi"
+# "Plc" "Pli" "Pyc" "Pyi" "Se"  "Sw"  "Sxs" "Sxw")
+
+# Spp.list = c("Dr")
+# spp = "Pw"
+fold = 5
+##---Start of Foreach loops_________
+set.seed(12345)
+SuitPred <- foreach(spp = Spp.list, .combine = rbind) %do% {
+  trainSub <- X1.build[X1.build$spp == spp,] %>% drop_na() %>% distinct() ###subset training points
+  nsplit = 5
+  folds <- vfold_cv(trainSub, v = nsplit, strata = newfeas)
+  #   feas_split <- initial_split(trainSub, prop = 3/4, strata = newfeas)
+  foreach(fold = 1:nsplit) %do%{
+  train_data <- as.data.frame(folds$splits[[fold]], data = "analysis")
+  test_data <- as.data.frame(folds$splits[[fold]], data = "assessment")
+
+  train_data$newfeas<- as.factor(train_data $newfeas)
+  train_data$newfeas <- droplevels(train_data $newfeas)
+
+  Spp_recipe <-  recipe(newfeas ~ ., data =  train_data) %>%
+    update_role(zone, BGC, SS_NoSpace,  spp,  new_role = "id variable") %>% #SpecialCode,
+    #themis::step_downsample(newfeas, under_ratio = 4) %>%
+       step_dummy(SpecialCode, one_hot = TRUE) %>%
+    prep()
+trainSub2 <- Spp_recipe  %>% juice()
+trainSub2 <- as.data.frame(trainSub2)# %>% droplevels()
+Count <- trainSub2 %>% count(newfeas)
+
+#-----Build Model for Each Species
+tic()
+    SuitOrd <- ordfor(depvar = "newfeas", data = trainSub2 [,-c(1:4)], nsets=1000, nbest=10, ntreeperdiv=100, ntreefinal=101)#, perffunction = "probability" )
+    spp.ordmodel <- paste0("./sppModels/",spp, "_ordinalmodel", fold,".rds")
+    saveRDS(SuitOrd, file = spp.ordmodel)
+toc()
+#-----------
+ESuit_ord.pred <- predict(SuitOrd, test_data )
+test_data$ESuit_ord <- as.character(ESuit_ord.pred$ypred)
+
+# test.pred <- as.data.frame(test_data$ESuit_ord) %>% dplyr::rename("ESuit_ord" = 1)
+# trainSub2 <- cbind(test_data, test.pred)
+#table(data.frame(true_values=trainSub$newfeas, predictions=ESuit_ord.pred$ypred))#
+    test_data$ESuit_orddiff <- ifelse(test_data$ESuit_ord == test_data$newfeas, "True", "False")
+    #test_data <- test_data %>% filter(!(newfeas == 4 & ESuit_ord ==4)) ## remove records where unsuitable in both predicted and actual
+    test_data <-  test_data %>% dplyr::mutate(feas.orig = as.numeric(newfeas), pred.feas = as.numeric(ESuit_ord)) %>% mutate(feas.diff = pred.feas - feas.orig)
+    test_data <-  test_data %>% dplyr::select(BGC, SS_NoSpace, spp, newfeas,  ESuit_ord,  ESuit_orddiff, everything())
+    test_data
+  }
+  }
+##----end of foreach loops
+#summarize ratio of True and False by spp
+predicted_feas <- do.call(rbind.data.frame, SuitPred)
+
+fwrite(predicted_feas, "./outputs/predicted_feasibility.csv")
 ```
 
 
@@ -213,33 +213,50 @@ CFRG <- stocking_standards %>% mutate(footnotes = sapply(Footnotes, function(x) 
 ForCover <-  readRDS("D:/GitHub/BEC_Classification_Analysis/clean_data/Analysis_BECMaster_Veg.rds") %>% 
   #filter(Lifeform == c("1", "2")) %>%
   mutate(Species = gsub("[0-9]$","", Species)) 
-
+##---Summaries by published SU
 su <- fread("D:/GitHub/BEC_Classification_Analysis/clean_data/combined_SU.csv")%>% left_join(ForCover)
-xx <- su %>% filter(SiteUnit == "BWBSdk_102" , Species == "PICEGLA")
-
 nplot <- su %>% select(PlotNumber, SiteUnit.orig)  %>% distinct %>% group_by(SiteUnit.orig) %>% mutate(nplot = n()) %>% ungroup %>% select(-PlotNumber) %>% distinct()
 su <- su %>% left_join(nplot, by = "SiteUnit.orig") %>% distinct
-
-treecov <- su %>% group_by (SiteUnit.orig, Species) %>% mutate(mean_cover = mean(Cover), n=n()) %>% select(SiteUnit.orig, Species, mean_cover, n) %>% distinct() %>% ungroup() %>% drop_na() %>% left_join(nplot, by = "SiteUnit.orig") %>% rowwise() %>% mutate(freq = n/nplot) %>% ungroup()
-
-treecov <- treecov %>% group_by (SiteUnit.orig, Species) %>% mutate(freq = n/nplot)  %>% left_join(taxon.lifeform, by = c("Species" = "Code")) %>% select(SiteUnit.orig, TreeCode, Species, mean_cover, freq ) %>% distinct() %>% filter(!is.na(TreeCode)) %>% 
-  mutate(SS_NoSpace = gsub(" ", "", SiteUnit.orig)) %>% select(SS_NoSpace, TreeCode, Species, mean_cover, freq) %>% distinct() %>% mutate(TreeCode = recode(TreeCode, "Sw" = "Sx", "Sxw" = "Sx", "Act" = "Ac", "Acb" = "Ac"))
-
+treecov <- su %>% group_by (SiteUnit.orig, Species) %>% mutate(mean_cover = (sum(Cover)/nplot) , n=n()) %>% select(SiteUnit.orig, Species, mean_cover, n) %>% distinct() %>% ungroup() %>% drop_na() %>% left_join(nplot, by = "SiteUnit.orig") %>% rowwise() %>% mutate(freq = n/nplot) %>% ungroup()
+treecov <- treecov %>% group_by (SiteUnit.orig, Species) %>% mutate(freq = n/nplot)  %>% left_join(taxon.lifeform, by = c("Species" = "Code")) %>% select(SiteUnit.orig, TreeCode, Species, mean_cover, freq, nplot ) %>% distinct() %>% filter(!is.na(TreeCode)) %>% 
+  mutate(SS_NoSpace = gsub(" ", "", SiteUnit.orig)) %>% select(SS_NoSpace, TreeCode, Species, mean_cover, freq, nplot) %>% distinct() %>% mutate(TreeCode = recode(TreeCode, "Sw" = "Sx", "Sxw" = "Sx", "Act" = "Ac", "Acb" = "Ac"))
+##---Summaries by published edatopic x site series
+eda_su <- fread("./inputs/edatopic_v13_su.csv") %>% left_join(ForCover, by = c(Plot = 'PlotNumber'))
+nplot.eda <- eda_su %>% select(Plot, SS_NoSpace) %>% distinct() %>% group_by(SS_NoSpace) %>% mutate(nplot.eda = n()) %>% ungroup() %>% select(-Plot) %>% distinct()
+eda_su <- eda_su %>% left_join(nplot.eda, by = "SS_NoSpace") %>% distinct
+treecov.eda <- eda_su %>% group_by (SS_NoSpace, Species) %>% mutate(mean_cover.eda = (sum(Cover)/nplot.eda) , n.eda=n()) %>% select(SS_NoSpace, Species, mean_cover.eda, n.eda) %>% distinct() %>% ungroup() %>% drop_na() %>% left_join(nplot.eda, by = "SS_NoSpace") %>% rowwise() %>% mutate(freq.eda = n.eda/nplot.eda) %>% ungroup()
+xx <- treecov.eda %>% filter(SS_NoSpace == "ICHmc2/06")
+treecov.eda <- treecov.eda %>% group_by (SS_NoSpace, Species) %>% mutate(freq.eda = n.eda/nplot.eda)  %>% left_join(taxon.lifeform, by = c("Species" = "Code")) %>% select(SS_NoSpace, TreeCode, Species, mean_cover.eda, freq.eda, nplot.eda ) %>% distinct() %>% filter(!is.na(TreeCode)) %>%
+  mutate(TreeCode = recode(TreeCode, "Sw" = "Sx", "Sxw" = "Sx", "Act" = "Ac", "Acb" = "Ac"))
 
 final <- predicted_feas %>% 
   left_join(CFRG, by = c("SS_NoSpace" = "SS_NoSpace", "spp" = "Species")) %>%
   left_join(treecov, by = c("SS_NoSpace" = "SS_NoSpace", "spp" = "TreeCode")) %>%
+  left_join(treecov.eda, by = c("SS_NoSpace" = "SS_NoSpace", "spp" = "TreeCode")) %>%
   distinct() %>%
   left_join(special, by = c("SS_NoSpace" = "SS_NoSpace")) %>%
   #left_join(footnotes, by = c("SS_NoSpace" = "SS_NoSpace")) %>%
-  select(zone,BGC, SS_NoSpace, SpecialCode, spp, newfeas,  ESuit_ord,  ESuit_orddiff, Suitability, footnotes, mean_cover, freq, everything()) %>%
-  arrange(SS_NoSpace)
+  select(zone,BGC, SS_NoSpace, SpecialCode, spp, newfeas,  ESuit_ord,  ESuit_orddiff, Suitability, footnotes, mean_cover, freq, nplot,mean_cover.eda, freq.eda,nplot.eda, everything()) %>% mutate(mean_cover = round(mean_cover, 1), mean_cover.eda = round(mean_cover.eda, 1), freq = round(freq*100, 1), freq.eda = round(freq.eda*100, 2)) %>% arrange(SS_NoSpace)
   # select(zone,BGC, SS_NoSpace, spp, newfeas,  ESuit_ord,  ESuit_orddiff, Suitability, footnotes, mean_cover, freq, everything()) %>% arrange(SS_NoSpace)
 
-fwrite(final, "./outputs/Feasibility_v13_1.csv")
+fwrite(final, "./outputs/Feasibility_v13_2.csv")
 fwrite(footnotes, "./outputs/CFRG_footnotes.csv")
 
 ```
+Rule-based feasibility
+```{r}
+ final <- fread("./outputs/Feasibility_v13_2.csv")
+ final <- final %>% mutate(pres_abs = ifelse(!is.na(Suitability) | !is.na(mean_cover), 1, 0)) %>% 
+  mutate(rulefeas = ifelse(pres_abs == 1, 1, 5)) %>% 
+  select(zone, BGC, SS_NoSpace, SpecialCode, spp, newfeas,  ESuit_ord,  ESuit_orddiff, pres_abs, rulefeas, Suitability, footnotes, mean_cover, freq, everything())
+ final <- final %>% mutate(rulefeas = ifelse(mean_cover >= 20, 1,
+                                            ifelse(mean_cover >= 10, 2,
+                                                   ifelse(mean_cover >0.1 , 3,
+                                                          ifelse(mean_cover <=.1, 4, 5)))))
+xx <- final %>% filter( spp == "Ac")
+
+```
+
 
 To do: build a final model for prediction of any new site series. If these new site series fall outside the dimensions of the current training set, caution should be used in interpreting the results.\\
 

@@ -34,9 +34,10 @@ Read in all data tables
 
 Trees <- fread(paste0(cloud_dir,"ccissv13_files/TreeSpeciestoModel2.csv"), data.table=FALSE) %>% filter(Include == "y") %>% dplyr::select(TreeCode) %>% dplyr::rename(spp = TreeCode)# %>% add_row(spp = "")
 
-BGCZone <-fread(paste0(cloud_dir,"ccissv13_files/WNA_BGCs_Info_v13_1.csv"), data.table=FALSE) #%>% dplyr::select(Zone, BGC)
+BGCZone <-fread(paste0(cloud_dir,"ccissv13_files/WNA_BGCs_Info_v13_2.csv"), data.table=FALSE) #%>% dplyr::select(Zone, BGC)
+SS <- fread(paste0(cloud_dir,"ccissv13_files/WNA_SSeries_v12_11.csv"), data.table=FALSE) %>% dplyr::select(BGC, SS_NoSpace, SpecialCode ) %>% distinct()
 
-ESuit <- fread(paste0(cloud_dir,"ccissv13_files/Feasibility_v13_1.csv"), data.table=FALSE) %>% dplyr::filter(!outrange == TRUE) %>% 
+ESuit <- fread(paste0(cloud_dir,"ccissv13_files/Feasibility_v13_2.csv"), data.table=FALSE) %>% dplyr::filter(!outrange == TRUE) %>% 
   distinct() %>%
   dplyr::rename("SS_NoSpace"= ss_nospace, "BGC" = bgc)
 
@@ -51,7 +52,7 @@ sample.n = 50
 climdat.sample <- climdat %>% group_by(BGC) %>% slice(sample(n(),min(sample.n, n()))) %>% ungroup() %>% filter(!BGC == "(None)")
 climdat.sample <- addVars(climdat.sample)
 
-E1 <-fread(paste0(cloud_dir,"ccissv13_files/Edatopic_v13_1.csv"),  na.strings= c("", "NA")) %>% distinct()
+E1 <-fread(paste0(cloud_dir,"ccissv13_files/Edatopic_v13_2.csv"),  na.strings= c("", "NA")) %>% distinct()
 
 S1 <- fread(paste0(cloud_dir,"ccissv13_files/SpecialAdjustments_v2.csv"),  na.strings= c("", "NA")) %>% distinct()
 
@@ -88,7 +89,7 @@ dups <-  ESuit.tree |>
 ESuit.tree2 <- ESuit.tree %>% pivot_wider(id_cols = c(BGC, SS_NoSpace), names_from = spp, values_from = newfeas)  %>%
   as.data.frame() %>% replace(.=="NULL", 4) %>% replace(.== '5', 4) %>% mutate(across(where(is.numeric), ~ ifelse(is.na(.), 4, .)))# 
 ESuit.dat <- ESuit.tree2 %>% pivot_longer(!c(BGC,SS_NoSpace), names_to = "spp", values_to = "newfeas") %>% distinct()
-ESuit.dat <- as.data.frame(ESuit.dat)
+ESuit.dat <- as.data.frame(ESuit.dat) %>% left_join(SS, by = c("BGC", "SS_NoSpace")) %>% distinct()
 
 xx <- ESuit.dat  %>% count(spp)
 ```
