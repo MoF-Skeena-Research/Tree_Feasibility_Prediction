@@ -124,11 +124,54 @@ In some cases, this reassessment has resulted in commercially valued species rec
 
 Subsequent review of this output led to some clarification of definitions below and modifications to initial ratings attributes. An ordinal random forest model was trained from these ratings with climate and site-level environmental variables. This model was then used to predict suitability ratings for all site series not previously assessed. This process was also used to identify cases where specific species ratings were misclassified by the random forest model and might reflect inconsistent ratings within the applied ratings and should be reassessed. Site series with extra-edatopic factors (cold-air site series, floodplains, etc.) have been incompletely flagged in the dataset. Predictions from the random-forest model do not include these factors. D. Meidinger subsequently reviewed his suitability ratings for the USA_BGC and made modifications to align with the rating definitions below. Review of ratings required by regional experts.
 
-## Species Feasibility Workflow
+## Species Feasibility Workflow: version 1 draft
 
-Add decision workflow draft here.
+### Key to Feasibility Rating
+
+#### 1. Species Occurrence in BGC and Site Unit
+
+-   **Species occurs (in fundamental niche)**
+-   **Species absent (out of fundamental niche)**
+
+##### Evidence:
+
+-   Presence in BEC Data: Site series summary data/Edatopic summaries; or,
+-   Occurrence in CFRG; or,
+-   Survival in off-site trials
+
+#### 2. Initial Feasibility Rating from BEC Data (Realized Niche)
+
+##### Evidence: Abundance and constancy of species in natural stands
+
+-   Site series summary data/Edatopic summaries
+
+#### 3. Modify Initial Feasibility from CFRG and Plantation Success
+
+##### Evidence:
+
+-   CFRG rating + footnotes / Operational plantation success
+-   Assessment of off-site trials where applicable, SIBEC
+
+##### Upweight initial rating where:
+
+-   High CFRG rating and no footnotes
+-   Widespread plantation success
+-   High SIBEC values
+-   Good success in trials
+
+##### Downweight initial rating where:
+
+-   Low CFRG ratings/presence of environmental constraint footnotes
+-   Poor performance in operational plantings
+-   Poor success in off-site trials
+-   Subpar SIBEC values
+
+##### Further adjustments:
+
+-   **Reduce to L or ?**: Evidence of 'decline' in natural or planted stands
 
 {{< pagebreak >}}
+
 # Appendix 1. Examples of Environmental Feasibility Ratings Decisions
 
 Some decision/discussion examples for environmental feasibility ratings:
@@ -143,12 +186,9 @@ Some decision/discussion examples for environmental feasibility ratings:
 
 5.  Where a species’ previous reference guide rating was lower due mainly to perceived silvicultural/wood quality concerns (e.g., Bl, Cw, Hw), a higher rating was often assigned based on environmental feasibility. (e.g., Bl previously assigned a E2 in some ESSF subzone/variants but now assigned an **E1** for some site series (e.g., SBSmc2, Kamloops ESSF)).
 
-6.  Where a species’ previous reference guide rating was high due mainly to high timber desirability (e.g., Fd), but portions of the site series range are not considered of high feasibility, a lower rating is often applied even though on the suitable portions of the site series the species may perform well.
-{{< pagebreak >}}
-# Appendix II. Chief Forester's Reference Guide Footnotes
+6.  Where a species’ previous reference guide rating was high due mainly to high timber desirability (e.g., Fd), but portions of the site series range are not considered of high feasibility, a lower rating is often applied even though on the suitable portions of the site series the species may perform well. {{< pagebreak >}} \# Appendix II. Chief Forester's Reference Guide Footnotes
 
-{{< pagebreak >}}
-## Appendix IIa. Environment Limiting Footnotes
+{{< pagebreak >}} \## Appendix IIa. Environment Limiting Footnotes
 
 -   **H** = Heat related limitation (may include aridity)
 -   **A** = Aridity limitation
@@ -157,6 +197,7 @@ Some decision/discussion examples for environmental feasibility ratings:
 -   **F** = Frost limitations
 -   **T** = Maritime/Continentality Limits
 -   **W** = Overly wet site conditions
+
 ```{r}
 # Data for the table
 data <- data.frame(
@@ -205,8 +246,8 @@ gt_table <- gt(data) %>%
 # Print the gt table
 gt_table
 ```
-{{< pagebreak >}}
-## Appendix IIb. Site or Soils Limiting Footnotes 
+
+{{< pagebreak >}} \## Appendix IIb. Site or Soils Limiting Footnotes
 
 ```{r}
 # Data for the table
@@ -247,7 +288,7 @@ gt_table2 <- gt(data2) %>%
 gt_table2
 ```
 
-## Appendix IIb. Site or Soils Limiting Footnotes 
+## Appendix IIb. Site or Soils Limiting Footnotes
 
 ```{r}
 # Data for the table
@@ -289,5 +330,3 @@ gt_table3 <- gt(data3) %>%
 # Print the gt table
 gt_table3
 ```
-
-

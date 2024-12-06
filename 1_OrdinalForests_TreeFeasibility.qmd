@@ -220,6 +220,7 @@ su <- su %>% left_join(nplot, by = "SiteUnit.orig") %>% distinct
 treecov <- su %>% group_by (SiteUnit.orig, Species) %>% mutate(mean_cover = (sum(Cover)/nplot) , n=n()) %>% select(SiteUnit.orig, Species, mean_cover, n) %>% distinct() %>% ungroup() %>% drop_na() %>% left_join(nplot, by = "SiteUnit.orig") %>% rowwise() %>% mutate(freq = n/nplot) %>% ungroup()
 treecov <- treecov %>% group_by (SiteUnit.orig, Species) %>% mutate(freq = n/nplot)  %>% left_join(taxon.lifeform, by = c("Species" = "Code")) %>% select(SiteUnit.orig, TreeCode, Species, mean_cover, freq, nplot ) %>% distinct() %>% filter(!is.na(TreeCode)) %>% 
   mutate(SS_NoSpace = gsub(" ", "", SiteUnit.orig)) %>% select(SS_NoSpace, TreeCode, Species, mean_cover, freq, nplot) %>% distinct() %>% mutate(TreeCode = recode(TreeCode, "Sw" = "Sx", "Sxw" = "Sx", "Act" = "Ac", "Acb" = "Ac"))
+
 ##---Summaries by published edatopic x site series
 eda_su <- fread("./inputs/edatopic_v13_su.csv") %>% left_join(ForCover, by = c(Plot = 'PlotNumber'))
 nplot.eda <- eda_su %>% select(Plot, SS_NoSpace) %>% distinct() %>% group_by(SS_NoSpace) %>% mutate(nplot.eda = n()) %>% ungroup() %>% select(-Plot) %>% distinct()
@@ -260,7 +261,7 @@ xx <- final %>% filter( spp == "Ac")
 
 To do: build a final model for prediction of any new site series. If these new site series fall outside the dimensions of the current training set, caution should be used in interpreting the results.\\
 
-##Decision Trees to examine limiting conditions for species
+## Decision Trees to examine limiting conditions for species
 
 ```{r C50 decision trees}
 # require(C50)
