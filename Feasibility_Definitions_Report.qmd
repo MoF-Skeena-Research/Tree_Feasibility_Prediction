@@ -1,5 +1,5 @@
 ---
-title: "Ratings of Tree Species Environmental Suitability"
+title: "Ratings of Tree Species Environmental Feasibility"
 authors: "William H MacKenzie, Allen Banner, Del V. Meidinger, Hardy Griesbauer, Ray Coupe, Heather Klassen, Sari Saunders, Tom Braumandl, Bruce Rogers, Richard Kabzems"
 date: "5/12/2024"
 format:
@@ -40,13 +40,21 @@ require(gt)
 
 # Introduction
 
-The Chief Forester’s Reference Guide (CFRG) applies a four-class suitability rating system (primary, secondary, tertiary, Unrated/unsuitable) to each tree species in every recognized site series that occurs in British Columbia. These suitability ratings are defined as ‘ecological suitability for a timber objective’, and based on an assessment of three factors: environmental suitability of sites, forest health considerations, and ability to supply timber for sawlog production. These ratings were used historically to inform the identification of preferred and acceptable species in the creation of stocking standards.
+The Chief Forester’s Reference Guide (CFRG) applies a four-class suitability rating system (primary, secondary, tertiary, Unrated/unsuitable) to each tree species in every recognized site series that occurs in British Columbia. These suitability ratings are defined as ‘ecological suitability for a timber objective’, and based on an assessment of three factors:
 
-There is no consistent or documented approach to how a suitability rating is created from an assessment of thee different factors. The CFRG suitability ratings are generally higher for preferred timber species (e.g., Douglas-fir) and often under-rated for less desirable species (e.g., subalpine fir). Broad-leaved species, which do not produce sawlog timber, are not rated in a similar fashion. Additionally, the CFRG ratings are adjusted within a site series to always present at least one primary species as the “best available species” for sawlog production in a site series.
+-   feasibility (environmental conditions);
 
-Thus, use of the CFRG species suitability ratings for creation of alternative (non-sawlog) management prescriptions or for climate change projections of tree species performance is suboptimal. Rather, these uses will benefit from a independent evaluation of each of 3 factors (environmental feasibility + reliability/forest health factors + management goal/intent). Environmental feasibility of tree species at a site series level is the primary factor in this assessment as it identifies which species are candidates for consideration in the management prescription as well as providing some information useful for evaluating reliability.
+-   crop reliability (forest health considerations); and
 
-This document describes an approach for assessing the environmental feasibility of native tree species (aka: ‘species feasibilities’) in the conditions of a site series, and for the creation of a species by site series feasibility rating matrix for British Columbia and adjacent jurisdictions. This set of species feasibility ratings will then be available for assessing tree species for use in non-sawlog management prescriptions and for climate change modelling. Forest health considerations are to be reviewed separately by forest health specialists for inclusion in reforestation decisions. Management prescriptions to different management objectives can then be created from these ratings.
+-   maximum sustainable productivity (ability to supply timber for sawlog production).
+
+The rankings applied always have at least one primary “best-in-class” species for each site series indicating the best species choice to meet the timber objective. These ratings were used historically to inform the identification of preferred and acceptable species in the creation of stocking standards.
+
+There is no consistent or documented approach to how a suitability rating is created from an assessment of these different factors. The CFRG suitability ratings are generally higher for preferred timber species (e.g., Douglas-fir) and often under-rated for less desirable species (e.g., subalpine fir). Broad-leaved species, which do not produce sawlog timber, are not rated in a similar fashion. The CFRG ratings are adjusted within a site series to always present at least one primary species as the “best available species” for sawlog production in a site series regardless of the severity of site conditions. Additionally, no ratings are presented for mapped BGCs with no formal site series. Generally these are areas outside the timber harvesting land base or currently remote with no active harvesting. For these reasons, the direct use of the CFRG species suitability ratings for creation of alternative (non-sawlog) management prescriptions or for climate change projections of tree species performance is suboptimal.
+
+An independent evaluation of each of the 3 decision factors (environmental feasibility + reliability/forest health factors + management goal/intent) would be both more transparent and advantageous in the development of stocking standards with different management goals and to account for changing climate factors. Environmental feasibility of tree species at a site series level is the primary factor in this assessment as it identifies which species are even candidates for consideration in the management prescription as well as providing some information useful for evaluating reliability.
+
+This document describes an approach for assessing the environmental feasibility (aka: ‘species feasibilities’) of western North America tree species to the conditions of a site series, and for the creation of a species by site series feasibility rating matrix for British Columbia and adjacent jurisdictions. This set of species feasibility ratings are then the basis for projecting tree species response to climate change at a site series level (CCISS tool). The intention of CCISS is to provide forester's with a climate change lens for their reforestation prescriptions whether developing conventional or non-sawlog management stocking standards or landscape level objectives. However, this work only addresses the environmental factors in building a reforestation prescription and foresters will be required to incorporate information from forest health specialists, management objectives, and a plethora of other site specific factors.
 
 # Species Feasibility Ratings
 
@@ -118,55 +126,69 @@ ggplot(data, aes(x, y)) +
 
 ## Feasibility Rating Process
 
-Initial feasibility ratings were assigned by A. Banner and T. Braumandl for all regions using the following information resources.
+Initial feasibility ratings were assigned by A. Banner (Coast and North Area), T. Braumandl (Kootenay-Boundary, Thompson-Okanagan), W. MacKenzie (Alberta), D. Meidinger (USA) for all regions using the following information resources.
 
-In some cases, this reassessment has resulted in commercially valued species receiving lower feasibility ratings relative to the suitability rating in the reference guide. Species indicative of a BGC unit may also receive a lower rating in some cases (e.g., Fd as an E2 in the IDFdk4 where frost and cold temperature limitations are widespread). Site series near the limits of tree species feasibility (parkland climates, sites with very thin soil veneers) will often have no tree species with highest feasibility (E1), due to general constraints to trees in these environmental conditions. These differences are not a problem, and generally we do not recommend directly comparing the feasibility and suitability ratings (e.g., E1 vs primary) as they are comprised of different decision-making factors.
+1.  Chief Forester’s “reference_guide_incorporating_lmh_70_edits_Oct_2017.xlsm”. Rankings modified from primary, secondary, tertiary ratings used in this file using above criteria.
+2.  Geographic and Site limitation footnotes from CFRG.
+3.  Relevant BGC Field Guides
+4.  Site Index Estimates by BEC Site Series (SIBEC) where available; https://www2.gov.bc.ca/gov/content/environment/plants-animals-ecosystems/ecosystems/sibec
+5.  Krajina, Klinka, and Worrall 1982. Distribution and Ecological Characteristics of Trees and Shrubs of British Columbia
+6.  Klinka, Worrall, Skoda, Varga. 2000. The distribution and synopsis of ecological and silvical characteristics of tree species of British Columbia’s forests.
+7.  Chapter 6 (Ecological Principles: Applications; Silvical characteristics and regeneration implications of major tree species) from Regenerating British Columbia's Forests (1990)
+8.  Data summarized from Provincial BEC database provided by Will MacKenzie and Kiri Daust - Edatopic grids with tree species abundance for each BEC variant
+9.  Ecologists' field experience
 
-Subsequent review of this output led to some clarification of definitions below and modifications to initial ratings attributes. An ordinal random forest model was trained from these ratings with climate and site-level environmental variables. This model was then used to predict suitability ratings for all site series not previously assessed. This process was also used to identify cases where specific species ratings were misclassified by the random forest model and might reflect inconsistent ratings within the applied ratings and should be reassessed. Site series with extra-edatopic factors (cold-air site series, floodplains, etc.) have been incompletely flagged in the dataset. Predictions from the random-forest model do not include these factors. D. Meidinger subsequently reviewed his suitability ratings for the USA_BGC and made modifications to align with the rating definitions below. Review of ratings required by regional experts.
+Subsequent review of this output led to some clarification of definitions and modifications to initial ratings attributes. The initial ratings were then reviewed by various regional experts. Complete reviews occurred in the Coast Area (H. Klassen, S. Saunders,), Thompson-Okanagan (M. Ryan), Northeast and Alberta (R. Kabzems). Spot checks were undertaken in Omineca (B. Rogers, H. Griesbauer), Skeena (E. Lilles), Cariboo Regions (R. Coupe). D. Meidinger did a second assessment of USA ratings.
 
-## Species Feasibility Workflow: version 1 draft
+In some cases, this assessment has resulted in commercially valued species receiving lower feasibility ratings relative to the suitability rating in the reference guide. Species indicative of a BGC unit may also receive a lower rating in some cases (e.g., Fd as an E2 in the IDFdk4 where frost and cold temperature limitations are widespread). Site series near the limits of tree species feasibility (parkland climates, sites with very thin soil veneers) will often have no tree species with highest feasibility (E1), due to general constraints to trees in these environmental conditions. These type of cases often have the largest deviation from the CFRG ratings but should be expected as the CCISS ratings of feasibility are absolute ratings rather then relative within site series (CFRG).
+
+An ordinal random forest model was trained from these ratings with climate and site-level environmental variables. This model was then used to predict suitability ratings for all site series not previously rated in the CFRG. This process was also used to identify cases where specific species ratings were potentially misclassified by the random forest model and might reflect inconsistent ratings within the applied ratings and should be reassessed. Site series with extra-edatopic factors (cold-air site series, floodplains, etc.) have been flagged in the data set but not yet explicitly used in the modelling. Addition quantitative approaches are being developed to assess and predict species environmental feasibility.
+
+## Species Feasibility Decision Workflow: version 1 draft
+
+Following the November 2024 CCISS review meeting, the following decision tree was developed to guide the process of assigning/reviewing species feasibility ratings. This decision tree is a preliminary draft and will be refined as the process is applied to more site series and species.
 
 ### Key to Feasibility Rating
 
-#### 1. Species Occurrence in BGC and Site Unit
+**1. Species Occurrence in BGC and Site Unit**
 
--   **Species occurs (in fundamental niche)**
--   **Species absent (out of fundamental niche)**
+-   Species occurs (within environmental tolerance/fundamental niche)
+-   Species absent (site is outside of environmental tolerance/fundamental niche)
 
-##### Evidence:
+**Evidence:**
 
 -   Presence in BEC Data: Site series summary data/Edatopic summaries; or,
 -   Occurrence in CFRG; or,
 -   Survival in off-site trials
 
-#### 2. Initial Feasibility Rating from BEC Data (Realized Niche)
+**2. Initial Feasibility Rating from BEC Data (Realized Niche)**
 
-##### Evidence: Abundance and constancy of species in natural stands
+**Evidence: Abundance and constancy of species in natural stands**
 
 -   Site series summary data/Edatopic summaries
 
-#### 3. Modify Initial Feasibility from CFRG and Plantation Success
+**3. Modify Initial Feasibility from CFRG and Plantation Success**
 
-##### Evidence:
+**Evidence:**
 
 -   CFRG rating + footnotes / Operational plantation success
 -   Assessment of off-site trials where applicable, SIBEC
 
-##### Upweight initial rating where:
+**Upweight initial rating where:**
 
 -   High CFRG rating and no footnotes
 -   Widespread plantation success
 -   High SIBEC values
 -   Good success in trials
 
-##### Downweight initial rating where:
+**Downweight initial rating where:**
 
 -   Low CFRG ratings/presence of environmental constraint footnotes
 -   Poor performance in operational plantings
 -   Poor success in off-site trials
 -   Subpar SIBEC values
 
-##### Further adjustments:
+**Further adjustments:**
 
 -   **Reduce to L or ?**: Evidence of 'decline' in natural or planted stands
 
@@ -186,9 +208,13 @@ Some decision/discussion examples for environmental feasibility ratings:
 
 5.  Where a species’ previous reference guide rating was lower due mainly to perceived silvicultural/wood quality concerns (e.g., Bl, Cw, Hw), a higher rating was often assigned based on environmental feasibility. (e.g., Bl previously assigned a E2 in some ESSF subzone/variants but now assigned an **E1** for some site series (e.g., SBSmc2, Kamloops ESSF)).
 
-6.  Where a species’ previous reference guide rating was high due mainly to high timber desirability (e.g., Fd), but portions of the site series range are not considered of high feasibility, a lower rating is often applied even though on the suitable portions of the site series the species may perform well. {{< pagebreak >}} \# Appendix II. Chief Forester's Reference Guide Footnotes
+6.  Where a species’ previous reference guide rating was high due mainly to high timber desirability (e.g., Fd), but portions of the site series range are not considered of high feasibility, a lower rating is often applied even though on the suitable portions of the site series the species may perform well.
 
-{{< pagebreak >}} \## Appendix IIa. Environment Limiting Footnotes
+{{< pagebreak >}}
+
+# Appendix II. Chief Forester's Reference Guide Footnotes
+
+## Appendix IIa. Environment Limiting Footnotes
 
 -   **H** = Heat related limitation (may include aridity)
 -   **A** = Aridity limitation
@@ -247,7 +273,9 @@ gt_table <- gt(data) %>%
 gt_table
 ```
 
-{{< pagebreak >}} \## Appendix IIb. Site or Soils Limiting Footnotes
+{{< pagebreak >}}
+
+## Appendix IIb. Site or Soils Limiting Footnotes
 
 ```{r}
 # Data for the table
