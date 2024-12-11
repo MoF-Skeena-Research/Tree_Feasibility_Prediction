@@ -1,0 +1,197 @@
+---
+title: "Addition of Off-Site Species into Reforestation Guidelines: a standardized rationale"
+authors: "William H MacKenzie, Hardy Griesbauer"
+date: "September 29, 2018"
+#format: docx
+ format:
+  typst:
+    toc: true
+    toc-depth: 2
+    toc-title: Contents
+    section-numbering: 1.1.1
+    columns: 1
+    mainfont: Minion Pro
+    fontsize: 10pt
+editor: source
+execute:
+  echo: false
+  error: false
+  warning: false
+  message: false
+  fig.width: 6
+  fig.height: 4
+  fig.align: 'left'
+  fig.cap: true
+  fig.pos: H
+  out.width: '100%'
+  dev: pdf
+  fig.ext: pdf
+  cache: true
+  fig.retina: 2
+  dpi: 600
+  fig.asp: 1.5
+  fig.path: "./figures/"
+---
+
+```{r}
+require(tidyverse)
+require(gt)
+```
+
+## Abbreviations
+
+-   **BEC**: Biogeoclimatic Ecosystem Classification
+-   **BGC**: Biogeoclimatic
+-   **CCISS**: Climate Change Informed Species Selection
+-   **AOI**: Area-of-interest
+
+## Introduction
+
+Reforestation standards in BC have historically focused on using locally occurring tree species and populations to establish a new forest. This practice is based on the assumption that local populations are optimally adapted to the climatic regime of a given area and are therefore the best suited to provide sustained forest and timber values.
+
+A growing body of evidence now suggests, however, the degree of climatic change across much of the province will result in substantial shifts in local climatic regimes over a tree’s lifetime, which may exceed the adaptive capacity of in situ plantations and forests, potentially resulting in a loss of productivity, resilience and survival. This evidence challenges the “local is best” reforestation rationale, and further suggests that tree species from other geographic areas and climatic regimes may be better suited to projected future climates of a given area.
+
+BC is now changing reforestation policies to allow for the ‘assisted migration’ of tree species and populations into new ranges. Recent policy changes that enable assisted migration include the allowance of western larch to be planted in new geographic areas, and the development of climate-based seed transfer guidelines that will allow seed to be deployed where provenance climate matches projected future climates.
+
+The Climate Change-Informed Species Selection (CCISS) tool in development by the BC government provides information on the potential feasibility of novel tree species in a given geographic area. The tool can also identify areas where tree species currently used for reforestation may become unsuitable over time under projected climate change. This tool is distinct from the Climate-Based Seed Transfer system also under development, which solely focuses on the transfer of seedlots within a tree species’ current range. In other words, the CCISS tool addresses the issue of assisted migration of tree species, whereas the CBST system addresses the issue of assisted migration of tree populations (seedlots). This document focuses only on the CCISS tool and issues of the feasibility of establishment and long-term feasibility of tree species outside their current natural range.
+
+## Off-site species
+
+We use the term “off-site species” to denote a tree species that is not presently found on a given site series. This may be due to site limitations within a biogeoclimatic unit (species occurs on other site series within BGC) in which the species occurs; but, more typically, the species is absent from all site conditions within a biogeoclimatic subzone/variant.
+
+### Three types of off-site species
+
+An off-site species can be broadly grouped into three Types:
+
+#### Type 1
+
+Species that are not found in the AOI but were apparently well suited to the climatic regime of the historical reference period (1961-1990). They have been capable of successful establishment, productivity, and resilience in this area for at least several decades as evidenced in long-term successful plantings of the species. In other words, the area lies within the species’ fundamental, but not realized, niche. These trees may not occur naturally in the AOI due to low migration rates, geographic isolation, or other non-climatic factors, but will likely be successful in this area immediately. Supporting information for Type 1 designation may include such evidence as: - Successful operational and research off-site trials \>30 year of the species in the AOI. E.g Douglas-fir plantations in the ICHmc2. - Range modelling using historic climates strongly suggests their feasibility. E.g. Jaquish western larch modelling - Extrapolated feasibility into intermediate site or climatically similar areas. E.g. Douglas-fir added to SBSdk and ICHmc2 based on plantation evidence – extend into the ICHmc1 which is climatically and geographically intermediate.
+
+#### Type 2
+
+Species that are not found in the AOI and were historically marginally or not suited but may now be suitable given climate change over recent decades (1991-2017). Given that these trees have only recently become suitable in this area, there will likely be a limited long-term trial information but may be some trials suitable for assessing their current feasibility. Supporting information for Type 2 designation may include such evidence as: - Successful plantations 10-25 years old. E.g. Cw plantations is the SBSwk1 - Successful establishment survival in plantations 5-10 years old. E.g. Fd plantations in the SBSmc2 - Species range modelling using the 1991-2020 normal period show good feasibility.
+
+#### Type 3
+
+These tree species are not currently suitable in this area, but the CCISS tool or other range modelling suggests they become well suited in future climates for the AOI. Given their current ranking as unsuitable, there may be limited field data to support the current deployment of these species. These species should be promoted for trial planting to establish feasibility. Supporting information for Type 3 designation may include such evidence as: - Species range modelling using the 2025 normal period shows good feasibility and continued high feasibility in future time periods - Peripheral site or climate conditions to successful Type 1 or 2 trials
+
+#### Type 4
+
+These tree species are not currently suitable nor likely to be successfully established in the near term. This may be due to climatic or non-climatic factors.
+
+```{r}
+#| label: fig-type-evidence
+#| fig-cap: "Proposed Evidence to Categorize Off-Site Tree Species Feasibility Type."
+#| fig-cap-location: bottom
+#| warning: false
+#| fig-align: "center"
+data <- data.frame(
+  "Criteria" = c(
+    "Establishment evidence",
+    "Productivity evidence",
+    "Resilience evidence",
+    "Future climate regime certainty",
+    "Examples",
+    "Recommended actions"
+  ),
+  "Species Type 1" = c(
+    "- Multiple successful plantations that are over 20(30) years old in area, or climatically adjacent BGC units/areas.
+    - Few known plantation failures, or good understanding of sites where species can be established.
+    - Within the modeled species range using 1961-1990 climate data.
+    - High suitability in closely related site/climate regimes
+    - CCISS 2025 suitability ranking of H.\
+    - Climatic and site conditions strongly match known autecology for species.",
+    "- At least 80% of established trees display good form, vigour and growth at 20 years old.
+    - Field-measured site index of species is at least 80% of current preferred species for that site.
+    - CCISS tool suggests that species will remain suitable (ranking H or M) over the next 100 years.",
+    "- Few occurrences of major forest health factors preventing the establishment, growth and form of this species, or good understanding of how to mitigate these factors.",
+    "- CCISS tool indicates relatively high model agreement for future climate projections.",
+    "- Douglas-fir and western larch in Skeena Region.",
+    "- Add as currently suitable species to Reference Guide.
+    - Add to species ranges to be modelled in CCISS tool
+    - Allow in operational reforestation now
+    - Suitability rank dependant on assessment but likely H or M.
+    - Footnote ###"
+  ),
+  "Species Type 2" = c(
+    "- Limited information on successful plantations that are over 20(30) years old in area, or climatically adjacent BGC units/areas but evidence of good survival in younger trials (10-30)
+    - Identified plantation failures, or limited understanding of sites where species can be established.
+    - Within the modeled species range using 1991-2017 climate data.
+    - Good suitability in closely related site/climate regimes
+    - CCISS 2025 suitability ranking of M.
+    - Climatic and site conditions moderately match known autecology for species.",
+    "- At least 50% of established trees display good form, vigour and growth at 10 years old.
+    - Field-measured site index of species may not be possible, or is at least 60% of current preferred species for that site.
+    - CCISS tool suggests that species will become increasingly suitable (ranking H or M) over the next 100 years.",
+    "- Known occurrences of major forest health factors preventing the establishment, growth and form of this species, or limited understanding of how to mitigate these factors.",
+    "- CCISS tool indicates medium to high model agreement for future climate projections.",
+    "",
+    "- Add as currently suitable species to Reference Guide.
+    - Do not add to species ranges to be modelled in CCISS tool.
+    - Allow in operational reforestation now\n- Suitability rank L
+    - Footnote ###"
+  ),
+  "Species Type 3" = c(
+    "- None or very limited successful plantations in area, or climatically adjacent BGC units/areas.
+    - Widespread plantation failures or simply no data.
+    - Within the modeled species range using 2025 projected future climates.
+    - CCISS 2025 suitability ranking of L or ?.
+    - Climatic and site conditions match known autecology for species.",
+    "- No current productivity data
+    - CCISS tool suggests that species will become increasingly suitable (ranking H or M) over future time periods",
+    "- Known occurrences of major forest health factors preventing the establishment, growth and form of this species, or limited understanding of how to mitigate these factors.",
+    "- CCISS tool indicates medium to low model agreement for future climate projections.",
+    "",
+    "- Trials plantings of species encouraged to establish feasibility
+    - Suitability rank 4*
+    - Footnote ###
+    - *plant in establishment trials"
+  ),
+  stringsAsFactors = FALSE
+)
+
+# Create the table using gt
+gt_table <- gt(data) %>%
+  tab_header(
+    title = ""
+  ) %>%
+  cols_width(
+    vars(Criteria) ~ px(150),
+    everything() ~ px(200)
+  ) %>%
+  tab_options(
+    table.width = pct(100),
+    table.font.size = px(8)
+  ) %>%
+  tab_style(
+    style = "vertical-align:top",
+    locations = cells_body()
+  )
+ gt_table
+
+```
+
+
+## Considerations for application in reforestation guidelines
+
+The goal of planting off-site tree species in a given region is to maximize the survival, productivity and resilience of a managed stand. Under a changing climatic regime local species and populations may be compromised, and newly suitable species better adapted to future conditions. The deployment of off-site tree species in a region entails risk around establishment, growth, and susceptibility to climatic and non-climatic factors. Risk to off-site trees can be categorized under species- and climate-specific factors. Below, we briefly introduce some elements that must be considered when assessing the suitability of off-site tree species:
+
+### Species-specific factors
+
+-   **The likelihood of successful establishment**: The first, and likely most important, factor to consider in the suitability of an off-site tree species is the likelihood of successful establishment in a new area. This will depend on the autecology of the species. Related questions include: what is the range of environmental conditions that this species can tolerate as a seedling? How does sensitivity of this species vary with site series and other factors? For example, Douglas-fir and western larch can be successfully established outside their range on warm, dry aspects, but are relatively sensitive to frost on cold sites. Therefore, these species may be limited to certain site series in new areas and consideration of landscape position and topography made.
+
+-   **Productivity under projected future climates**: It is important that off-site species are well-matched to projected climatic regimes over their lifetime. Related questions include: once established, how will this species grow over its rotation? Over the short-term, will this species be able to grow fast enough to compete with vegetation and other tree species? Under projected climate change, will this species be productive and capable of producing forest and/or timber values throughout its rotation?
+
+-   **Resilience to non-climatic factors**: What is the capacity of this species to tolerate the abiotic and biotic factors that are currently in the area, or may increase under climate change?
+
+### Climate-specific factors
+
+Risks associated with planting off-site tree species will also depend on climatic factors, including the:
+
+-   **Climatic distance between current and future climates in a region**
+-   **Uncertainty in projected future climates**
+-   **Current climatic variability and probability of extreme events beyond the tolerance of species**
+
+Where the CCISS tool is projecting the addition of off-site species, it is likely indicating that a species-limiting climate threshold has been crossed. However, the current climate may not be suitable or overly risky to establish the tree species now even though the species may be highly suitable in future decades. In addition, off-site tree feasibility may be difficult to determine in regions where climate models have low agreement on future climates.
+
+The CCISS tool transfers species feasibility recommendations from current BGCs that most closely resemble the predicted future climates of the AOI. Where the tool suggests the addition of an off-site tree species in an AOI, it has aligned projected future BGCs climates and equivalent site conditions with BGCs where that off-site species is currently suitable. The model cannot consider all the elements that are critical to the successful deployment of the off-site tree species. The assessment of existing off-site species information as outlined in this document will be important for providing confidence that the off-site species has a reasonable probability of successful establishment in the current period so that it can form healthy and productive stands in the future.
