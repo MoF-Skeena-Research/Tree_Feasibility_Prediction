@@ -98,7 +98,7 @@ ggplot(data, aes(x, y)) +
   geom_vline(xintercept = c(-3, -2.25, -1.75, -1.25, -0.75, 0.75, 1.25, 1.75, 2.25, 3), linetype = "dashed", size=.75, color = "grey20") +
   geom_text(data = labels_data, aes(x = x, y = y, label = label), color = "black", fontface = "bold") +
   labs(x = "Environmental Gradient",
-       y = "Environmental Feasibility") +
+       y = "Environmental Suitability") +
   theme_minimal() +
   theme(axis.text.x = element_blank(),
         axis.text.y = element_blank(),
